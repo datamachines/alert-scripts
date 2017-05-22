@@ -2,63 +2,55 @@
 
 import requests
 import json
-import sys
-import os
+import yaml
+import time
+import argparse
+from os.path import expanduser
 
 # Constants 
-ARGUMENTS   = sys.argv[1:]
-WEBHOOK = 'https://hooks.slack.com/services/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'
-CHANNEL = '#general'
+WEBHOOK = ''
+CHANNEL = ''
 USER = ''
-MESSAGE = ':banana:'
-
-# Functions 
-
-def usage(exit_code=0):
-   print('''Usage: {} [-w WEBHOOK -u USER -c CHANNEL -m MESSAGE]
-   -t TOKEN API token of team to send results to
-   -u USER name of user or channel to send results to
-   -m MESSAGE message to send to user\n'''.format(os.path.basename(sys.argv[0])))
-   sys.exit(exit_code)
-
+MESSAGE = ''
 
 # Main Execution
 
 # Parse command line arguments
-while ARGUMENTS and ARGUMENTS[0].startswith('-') and len(ARGUMENTS[0]) > 1:
-	arg = ARGUMENTS.pop(0)
-	if arg == '-h':
-		usage(0)
-	elif arg == '-w':
-		WEBHOOK = ARGUMENTS.pop(0)
-	elif arg == '-c':
-		CHANNEL = ARGUMENTS.pop(0)
-	elif arg == '-u':
-		USER = ARGUMENTS.pop(0)
-	elif arg == '-m':
-		MESSAGE = ARGUMENTS.pop(0)
-	else:
-		usage(1)
+parser = argparse.ArgumentParser(description='Message a user on Slack')
+parser.add_argument('-w', type=str, help="webhook url of team to send results to", dest=WEBHOOK)
+parser.add_argument('-u', type=str, help="name of user to send results to", dest=USER)
+parser.add_argument('-c', type=str, help="name of channel to send results to", dest=CHANNEL)
+parser.add_argument('-m', type=str, help="message to send to user or channel", dest=MESSAGE)
+args = parser.parse_args()
+
+# Load message data
+data_file = expanduser("~") + '/.consume_data/data.yml'
+data = yaml.safe_load(open(data_file))
 
 # send to either a USER or a CHANNEL
-if USER != '':
+if data['USER'] != '':
 	payload = {
-		"text": MESSAGE,
-		"channel": CHANNEL,
+		"text": data['MESSAGE'],
+		"channel": data['CHANNEL'],
 		"icon_emoji":":monkey_face:",
 		"username": "George"
 	}
 else: 
 	payload = {
-		"text": MESSAGE,
-		"user": USER,
+		"text": data['MESSAGE'],
+		"user": data['USER'],
 		"icon_emoji":":monkey_face:",
 		"username": "George"
 	}
 
-try:
-	while 1:
-		r = requests.post(WEBHOOK, data = json.dumps(payload))
-except:
-	# exit gracefully
-	exit(0)
+# consume channel with posts
+print("consume.py: consuming...")
+
+r = requests.post(data['WEBHOOK'], data = json.dumps(payload))
+COUNT = 1
+while r.text == 'ok':
+	r = requests.post(data['WEBHOOK'], data = json.dumps(payload))
+	COUNT += 1
+	time.sleep(1) # API allows 1 message per second 
+
+print("consume.py: sent {} messages before reaching rate limit".format(COUNT))

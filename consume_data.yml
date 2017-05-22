@@ -1,0 +1,4 @@
+WEBHOOK: <Your webhook url>
+CHANNEL: <channel you wish to message>
+USER: <User you wish to message>
+MESSAGE: <desired message>
