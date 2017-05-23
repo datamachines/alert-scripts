@@ -1,4 +1,3 @@
-WEBHOOK: <Your webhook url>
-CHANNEL: <channel you wish to message>
-USER: <User you wish to message>
+TOKEN: <Your API token>
+CHANNEL: <channel you wish to consume>
 MESSAGE: <desired message>
